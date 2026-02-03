@@ -83,6 +83,13 @@ static uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, const char* skillnam
             g_selfId = src->id;
             debug_log("Self agent detected: id=%llu, name=%s, team=%u",
                 (unsigned long long)src->id, src->name ? src->name : "null", src->team);
+
+            // Detect WvW from team ID (teams 9-2000+ are WvW teams)
+            // Red=9-299, Blue=300-599, Green=600-899, etc.
+            if (src->team >= 9 && !g_inWvW.load()) {
+                debug_log("WvW detected from team ID %u - enabling WvW mode", src->team);
+                g_inWvW.store(true);
+            }
         }
         return 0;
     }
@@ -92,7 +99,12 @@ static uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, const char* skillnam
         switch (ev->is_statechange) {
             case CBTS_ENTERCOMBAT:
                 if (src && src->self) {
-                    debug_log("Entered combat - self, inWvW=%d", g_inWvW.load());
+                    debug_log("Entered combat - self, inWvW=%d, team=%u", g_inWvW.load(), src->team);
+                    // Also check team on combat enter
+                    if (src->team >= 9 && !g_inWvW.load()) {
+                        debug_log("WvW detected from combat team ID %u", src->team);
+                        g_inWvW.store(true);
+                    }
                 }
                 break;
 
@@ -138,20 +150,14 @@ static uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, const char* skillnam
         return 0;
     }
 
-    // Skip if not in WvW
-    if (!g_inWvW.load()) {
-        return 0;
-    }
-
-    // Log combat events with killing blows
+    // Log ALL killing blows for debugging (regardless of WvW state)
     if (ev->result == CBTR_KILLINGBLOW) {
-        debug_log("KILLINGBLOW detected: src=%s (self=%d, id=%llu), dst=%s (id=%llu), iff=%d, skill=%s",
+        debug_log("KILLINGBLOW: src=%s (self=%d), dst=%s, iff=%d, inWvW=%d, skill=%s",
             src && src->name ? src->name : "null",
             src ? src->self : 0,
-            src ? (unsigned long long)src->id : 0,
             dst && dst->name ? dst->name : "null",
-            dst ? (unsigned long long)dst->id : 0,
             ev->iff,
+            g_inWvW.load(),
             skillname ? skillname : "null");
 
         // Check if WE dealt the killing blow to a FOE
