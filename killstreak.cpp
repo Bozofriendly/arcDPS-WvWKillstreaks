@@ -132,6 +132,28 @@ static uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, const char* skillnam
                 }
                 break;
 
+            case CBTS_CHANGEDOWN:
+                debug_log("CHANGEDOWN (downed): src=%s (self=%d, team=%u), ev->src_agent=%llu, ev->dst_agent=%llu",
+                    src && src->name ? src->name : "null",
+                    src ? src->self : 0,
+                    src ? src->team : 0,
+                    (unsigned long long)ev->src_agent,
+                    (unsigned long long)ev->dst_agent);
+                break;
+
+            case CBTS_REWARD:
+                debug_log("REWARD: src_agent=%llu, dst_agent=%llu, value=%d, skillid=%u",
+                    (unsigned long long)ev->src_agent,
+                    (unsigned long long)ev->dst_agent,
+                    ev->value,
+                    ev->skillid);
+                // This might be WvW kill credit - dst_agent could be reward type
+                // Common WvW reward IDs for kills are in the 50000+ range
+                if (g_inWvW.load()) {
+                    debug_log("Got reward in WvW - potential kill credit");
+                }
+                break;
+
             case CBTS_MAPID:
                 {
                     uint32_t mapId = static_cast<uint32_t>(ev->src_agent);
@@ -170,10 +192,12 @@ static uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, const char* skillnam
             g_inWvW.load(),
             skillname ? skillname : "null");
 
-        // Check if WE dealt the killing blow to a FOE
-        if (src && src->self && dst && ev->iff == IFF_FOE) {
+        // Check if WE dealt the killing blow
+        // In WvW: dst is null (anonymized), iff may be unreliable
+        // Just check if src is self - that means WE got the kill
+        if (src && src->self) {
             uint32_t newCount = g_killCount.fetch_add(1) + 1;
-            debug_log("KILL COUNTED via KILLINGBLOW! New killstreak: %u", newCount);
+            debug_log("KILL COUNTED! New killstreak: %u", newCount);
             write_killcount_to_file();
         }
     }
