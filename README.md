@@ -24,9 +24,9 @@ A Guild Wars 2 addon that tracks your personal killstreak in World vs. World (Wv
 3. Download `nexus_streamlink.dll` from the [Releases](../../releases) page
 4. Place the DLL in your `<GW2 Install>/addons/` folder
 5. Launch Guild Wars 2 with Nexus
-6. (Optional) Edit `<GW2>/addons/killstreak/settings.txt` to change output path
+6. (Optional) Edit `<GW2>/addons/streamlink/settings.txt` to change output path
 
-**Default output path:** `<GW2 Install>/addons/killstreak/killstreak.txt`
+**Default output path:** `<GW2 Install>/addons/streamlink/killstreak.txt`
 
 ### ArcDPS Plugin (Legacy)
 
@@ -42,7 +42,7 @@ A Guild Wars 2 addon that tracks your personal killstreak in World vs. World (Wv
 1. Add a "Text (GDI+)" source
 2. Check "Read from file"
 3. Browse to the killstreak.txt file:
-   - Nexus: `<GW2 Install>/addons/killstreak/killstreak.txt` (or your custom path)
+   - Nexus: `<GW2 Install>/addons/streamlink/killstreak.txt` (or your custom path)
    - ArcDPS: `<GW2 Install>/addons/arcdps/killstreak.txt`
 4. Style as desired
 

@@ -19,7 +19,7 @@
 #include "ArcDPS.h"
 
 // Note: ImGui UI disabled - configure via settings file at:
-// <GW2>/addons/killstreak/settings.txt
+// <GW2>/addons/streamlink/settings.txt
 
 // Plugin info
 #define ADDON_NAME "Nexus Streamlink"
@@ -42,7 +42,7 @@ static HMODULE g_hModule = nullptr;
 static AddonDefinition g_addonDef = {};
 
 // Settings
-static char g_outputPath[512] = "addons/killstreak/killstreak.txt";
+static char g_outputPath[512] = "addons/streamlink/killstreak.txt";
 static char g_settingsPath[512] = "";
 
 // Forward declarations
@@ -122,7 +122,7 @@ static std::string GetSettingsPath()
 {
     if (!g_api) return "";
 
-    const char* addonDir = g_api->Paths_GetAddonDirectory("killstreak");
+    const char* addonDir = g_api->Paths_GetAddonDirectory("streamlink");
     if (!addonDir) return "";
 
     std::string path = addonDir;
@@ -344,9 +344,9 @@ static void OnCombatEvent(void* eventArgs)
 }
 
 // Note: Settings UI removed - configure output path via:
-// <GW2>/addons/killstreak/settings.txt
+// <GW2>/addons/streamlink/settings.txt
 // File should contain a single line with the relative path, e.g.:
-// addons/killstreak/killstreak.txt
+// addons/streamlink/killstreak.txt
 
 ///----------------------------------------------------------------------------------------------------
 /// AddonLoad - Called when addon is loaded

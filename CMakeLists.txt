@@ -14,7 +14,7 @@ if(WIN32)
 
         # Build as shared library (DLL)
         add_library(arcdps_killstreak SHARED
-            killstreak.cpp
+            arcdps_killstreak.cpp
             arcdps_structs.h
         )
 
@@ -34,7 +34,7 @@ if(WIN32)
 
         # Build as shared library (DLL) for Nexus
         add_library(nexus_streamlink SHARED
-            killstreak_nexus.cpp
+            nexus_streamlink.cpp
             Nexus.h
             ArcDPS.h
         )
