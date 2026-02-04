@@ -22,7 +22,7 @@
 // <GW2>/addons/killstreak/settings.txt
 
 // Plugin info
-#define ADDON_NAME "WvW Killstreak"
+#define ADDON_NAME "Nexus Streamlink"
 // Negative signature for non-Raidcore hosted addons (cast to uint32_t)
 #define ADDON_SIGNATURE static_cast<uint32_t>(-0xB020F1)
 

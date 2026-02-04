@@ -33,7 +33,7 @@ if(WIN32)
         message(STATUS "Building Nexus addon")
 
         # Build as shared library (DLL) for Nexus
-        add_library(wvw_killstreak SHARED
+        add_library(nexus_streamlink SHARED
             killstreak_nexus.cpp
             Nexus.h
             ArcDPS.h
@@ -41,16 +41,16 @@ if(WIN32)
 
         # Set output name for Nexus addon
         # Nexus addons are placed in <GW2>/addons/ folder
-        set_target_properties(wvw_killstreak PROPERTIES
-            OUTPUT_NAME "wvw_killstreak"
+        set_target_properties(nexus_streamlink PROPERTIES
+            OUTPUT_NAME "nexus_streamlink"
             PREFIX ""
             SUFFIX ".dll"
         )
 
         # Link Windows libraries
-        target_link_libraries(wvw_killstreak PRIVATE kernel32)
+        target_link_libraries(nexus_streamlink PRIVATE kernel32)
 
-        set(TARGET_NAME wvw_killstreak)
+        set(TARGET_NAME nexus_streamlink)
     endif()
 
     # Disable C++ exceptions and RTTI for smaller binary

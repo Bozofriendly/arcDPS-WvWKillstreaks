@@ -1,9 +1,9 @@
-# WvW Killstreak Tracker
+# Nexus Streamlink
 
 A Guild Wars 2 addon that tracks your personal killstreak in World vs. World (WvW). The kill count is written to a file that can be read by OBS or other streaming software.
 
 **Available in two versions:**
-- **Nexus Addon** (Recommended) - Uses the Nexus addon framework with configurable settings
+- **Nexus Streamlink** (Recommended) - Uses the Nexus addon framework with configurable settings
 - **ArcDPS Plugin** - Direct ArcDPS plugin for minimal setup
 
 ## Features
@@ -17,11 +17,11 @@ A Guild Wars 2 addon that tracks your personal killstreak in World vs. World (Wv
 
 ## Installation
 
-### Nexus Addon (Recommended)
+### Nexus Streamlink (Recommended)
 
 1. Install [Nexus](https://raidcore.gg/Nexus) if you haven't already
 2. Install [ArcDPS Integration](https://raidcore.gg/Addons?search=arcdps+integration) from Nexus addon library
-3. Download `wvw_killstreak.dll` from the [Releases](../../releases) page
+3. Download `nexus_streamlink.dll` from the [Releases](../../releases) page
 4. Place the DLL in your `<GW2 Install>/addons/` folder
 5. Launch Guild Wars 2 with Nexus
 6. (Optional) Edit `<GW2>/addons/killstreak/settings.txt` to change output path

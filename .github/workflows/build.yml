@@ -30,8 +30,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: wvw_killstreak_nexus
-          path: build/Release/wvw_killstreak.dll
+          name: nexus_streamlink
+          path: build/Release/nexus_streamlink.dll
 
   build-arcdps:
     runs-on: windows-latest
@@ -67,7 +67,7 @@ jobs:
       - name: Download Nexus artifact
         uses: actions/download-artifact@v4
         with:
-          name: wvw_killstreak_nexus
+          name: nexus_streamlink
           path: nexus
 
       - name: Download ArcDPS artifact
@@ -80,7 +80,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            nexus/wvw_killstreak.dll
+            nexus/nexus_streamlink.dll
             arcdps/arcdps_killstreak.dll
           generate_release_notes: true
         env:
