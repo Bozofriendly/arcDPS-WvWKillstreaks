@@ -103,7 +103,7 @@ static std::string GetFullOutputPath()
 {
     if (!g_api) return g_outputPath;
 
-    const char* gameDir = g_api->Paths.GetGameDirectory();
+    const char* gameDir = g_api->Paths_GetGameDirectory();
     if (!gameDir) return g_outputPath;
 
     std::string fullPath = gameDir;
@@ -122,7 +122,7 @@ static std::string GetSettingsPath()
 {
     if (!g_api) return "";
 
-    const char* addonDir = g_api->Paths.GetAddonDirectory("killstreak");
+    const char* addonDir = g_api->Paths_GetAddonDirectory("killstreak");
     if (!addonDir) return "";
 
     std::string path = addonDir;
@@ -359,7 +359,7 @@ static void AddonLoad(AddonAPI* aAPI)
     LoadSettings();
 
     // Subscribe to ArcDPS combat events
-    aAPI->Events.Subscribe(EV_ARCDPS_COMBATEVENT_LOCAL_RAW, OnCombatEvent);
+    aAPI->Events_Subscribe(EV_ARCDPS_COMBATEVENT_LOCAL_RAW, OnCombatEvent);
 
     // Initialize kill count file
     g_killCount.store(0);
@@ -377,7 +377,7 @@ static void AddonUnload()
     if (g_api)
     {
         // Unsubscribe from events
-        g_api->Events.Unsubscribe(EV_ARCDPS_COMBATEVENT_LOCAL_RAW, OnCombatEvent);
+        g_api->Events_Unsubscribe(EV_ARCDPS_COMBATEVENT_LOCAL_RAW, OnCombatEvent);
 
         char msg[64];
         snprintf(msg, sizeof(msg), "Addon unloaded. Final killstreak: %u", g_killCount.load());

@@ -1,9 +1,7 @@
 ///----------------------------------------------------------------------------------------------------
 /// Copyright (c) Raidcore.GG - Licensed under the MIT license.
-///
 /// Name         :  Nexus.h
 /// Description  :  C/C++ Definitions header for Nexus API.
-/// Authors      :  K. Bieniek
 ///----------------------------------------------------------------------------------------------------
 
 #ifndef NEXUS_H
@@ -19,28 +17,10 @@
 
 #define NEXUS_API_VERSION 6
 
-/* DataLink identifiers */
-#define DL_NEXUS_LINK "DL_NEXUS_LINK"
-#ifndef DL_MUMBLE_LINK
-#define DL_MUMBLE_LINK "DL_MUMBLE_LINK"
-#endif
-#ifndef DL_MUMBLE_LINK_IDENTITY
-#define DL_MUMBLE_LINK_IDENTITY "DL_MUMBLE_LINK_IDENTITY"
-#endif
-
 /* Event identifiers */
-#define EV_WINDOW_RESIZED          "EV_WINDOW_RESIZED"
-#define EV_MUMBLE_IDENTITY_UPDATED "EV_MUMBLE_IDENTITY_UPDATED"
-#define EV_ADDON_LOADED            "EV_ADDON_LOADED"
-#define EV_ADDON_UNLOADED          "EV_ADDON_UNLOADED"
-
-/* ArcDPS Event identifiers */
 #define EV_ARCDPS_COMBATEVENT_LOCAL_RAW "EV_ARCDPS_COMBATEVENT_LOCAL_RAW"
 #define EV_ARCDPS_COMBATEVENT_SQUAD_RAW "EV_ARCDPS_COMBATEVENT_SQUAD_RAW"
 
-///----------------------------------------------------------------------------------------------------
-/// ERenderType Enumeration
-///----------------------------------------------------------------------------------------------------
 typedef enum ERenderType
 {
 	ERenderType_PreRender,
@@ -49,9 +29,6 @@ typedef enum ERenderType
 	ERenderType_OptionsRender
 } ERenderType;
 
-///----------------------------------------------------------------------------------------------------
-/// ELogLevel Enumeration
-///----------------------------------------------------------------------------------------------------
 typedef enum ELogLevel
 {
 	ELogLevel_CRITICAL = 1,
@@ -61,20 +38,13 @@ typedef enum ELogLevel
 	ELogLevel_TRACE = 5
 } ELogLevel;
 
-///----------------------------------------------------------------------------------------------------
-/// EAddonFlags Enumeration
-///----------------------------------------------------------------------------------------------------
 typedef enum EAddonFlags
 {
 	EAddonFlags_None              = 0,
 	EAddonFlags_IsVolatile        = 1 << 0,
-	EAddonFlags_DisableHotloading = 1 << 1,
-	EAddonFlags_LaunchOnly        = 1 << 2
+	EAddonFlags_DisableHotloading = 1 << 1
 } EAddonFlags;
 
-///----------------------------------------------------------------------------------------------------
-/// EUpdateProvider Enumeration
-///----------------------------------------------------------------------------------------------------
 typedef enum EUpdateProvider
 {
 	EUpdateProvider_None     = 0,
@@ -84,35 +54,23 @@ typedef enum EUpdateProvider
 	EUpdateProvider_Self     = 4
 } EUpdateProvider;
 
-typedef struct Keybind
+typedef enum EMHStatus
 {
-	uint16_t Key;
-	bool     Alt;
-	bool     Ctrl;
-	bool     Shift;
-} Keybind;
-
-typedef struct Texture
-{
-	uint32_t Width;
-	uint32_t Height;
-	void*    Resource;
-} Texture;
-
-typedef struct NexusLinkData
-{
-	uint32_t Width;
-	uint32_t Height;
-	float    Scaling;
-
-	bool     IsMoving;
-	bool     IsCameraMoving;
-	bool     IsGameplay;
-
-	void*    Font;
-	void*    FontBig;
-	void*    FontUI;
-} NexusLinkData;
+	MH_UNKNOWN = -1,
+	MH_OK = 0,
+	MH_ERROR_ALREADY_INITIALIZED,
+	MH_ERROR_NOT_INITIALIZED,
+	MH_ERROR_ALREADY_CREATED,
+	MH_ERROR_NOT_CREATED,
+	MH_ERROR_ENABLED,
+	MH_ERROR_DISABLED,
+	MH_ERROR_NOT_EXECUTABLE,
+	MH_ERROR_UNSUPPORTED_FUNCTION,
+	MH_ERROR_MEMORY_ALLOC,
+	MH_ERROR_MEMORY_PROTECT,
+	MH_ERROR_MODULE_NOT_FOUND,
+	MH_ERROR_FUNCTION_NOT_FOUND
+} EMHStatus;
 
 typedef struct AddonVersion
 {
@@ -124,32 +82,34 @@ typedef struct AddonVersion
 
 struct AddonAPI;
 
-typedef void        (*ADDON_LOAD)                       (AddonAPI* aAPI);
-typedef void        (*ADDON_UNLOAD)                     ();
-
-typedef void        (*GUI_RENDER)                       ();
-typedef void        (*GUI_ADDRENDER)                    (ERenderType aRenderType, GUI_RENDER aRenderCallback);
-typedef void        (*GUI_REMRENDER)                    (GUI_RENDER aRenderCallback);
-
-typedef const char* (*PATHS_GETGAMEDIR)                 ();
-typedef const char* (*PATHS_GETADDONDIR)                (const char* aName);
-typedef const char* (*PATHS_GETCOMMONDIR)               ();
-
-typedef void        (*LOGGER_LOG)                       (ELogLevel aLogLevel, const char* aChannel, const char* aStr);
-
-typedef void        (*ALERTS_NOTIFY)                    (const char* aMessage);
-
-typedef void        (*EVENT_CONSUME)                    (void* aEventArgs);
-typedef void        (*EVENTS_RAISE)                     (const char* aIdentifier, void* aEventData);
-typedef void        (*EVENTS_RAISENOTIFICATION)         (const char* aIdentifier);
-typedef void        (*EVENTS_SUBSCRIBE)                 (const char* aIdentifier, EVENT_CONSUME aConsumeEventCallback);
-
-typedef void*       (*DATALINK_GET)                     (const char* aIdentifier);
-typedef void*       (*DATALINK_SHARE)                   (const char* aIdentifier, uint64_t aResourceSize);
+typedef void        (*ADDON_LOAD)(AddonAPI* aAPI);
+typedef void        (*ADDON_UNLOAD)();
+typedef void        (*GUI_RENDER)();
+typedef void        (*GUI_ADDRENDER)(ERenderType aRenderType, GUI_RENDER aRenderCallback);
+typedef void        (*GUI_REMRENDER)(GUI_RENDER aRenderCallback);
+typedef void        (*GUI_REGISTERCLOSEONESCAPE)(const char* aWindowName, bool* aIsVisible);
+typedef void        (*GUI_DEREGISTERCLOSEONESCAPE)(const char* aWindowName);
+typedef void        (*UPDATER_REQUESTUPDATE)(uint32_t aSignature, const char* aUpdateURL);
+typedef const char* (*PATHS_GETGAMEDIR)();
+typedef const char* (*PATHS_GETADDONDIR)(const char* aName);
+typedef const char* (*PATHS_GETCOMMONDIR)();
+typedef EMHStatus   (__stdcall* MINHOOK_CREATE)(LPVOID pTarget, LPVOID pDetour, LPVOID* ppOriginal);
+typedef EMHStatus   (__stdcall* MINHOOK_REMOVE)(LPVOID pTarget);
+typedef EMHStatus   (__stdcall* MINHOOK_ENABLE)(LPVOID pTarget);
+typedef EMHStatus   (__stdcall* MINHOOK_DISABLE)(LPVOID pTarget);
+typedef void        (*LOGGER_LOG)(ELogLevel aLogLevel, const char* aChannel, const char* aStr);
+typedef void        (*ALERTS_NOTIFY)(const char* aMessage);
+typedef void        (*EVENT_CONSUME)(void* aEventArgs);
+typedef void        (*EVENTS_RAISE)(const char* aIdentifier, void* aEventData);
+typedef void        (*EVENTS_RAISENOTIFICATION)(const char* aIdentifier);
+typedef void        (*EVENTS_RAISE_TARGETED)(uint32_t aSignature, const char* aIdentifier, void* aEventData);
+typedef void        (*EVENTS_RAISENOTIFICATION_TARGETED)(uint32_t aSignature, const char* aIdentifier);
+typedef void        (*EVENTS_SUBSCRIBE)(const char* aIdentifier, EVENT_CONSUME aConsumeEventCallback);
+typedef void*       (*DATALINK_GET)(const char* aIdentifier);
+typedef void*       (*DATALINK_SHARE)(const char* aIdentifier, uint64_t aResourceSize);
 
 typedef struct AddonDefinition
 {
-	/* required */
 	uint32_t        Signature;
 	uint32_t        APIVersion;
 	const char*     Name;
@@ -159,51 +119,38 @@ typedef struct AddonDefinition
 	ADDON_LOAD      Load;
 	ADDON_UNLOAD    Unload;
 	EAddonFlags     Flags;
-
-	/* update fallback */
 	EUpdateProvider Provider;
 	const char*     UpdateLink;
 } AddonDefinition;
 
 typedef struct AddonAPI
 {
-	/* Renderer */
 	void* SwapChain;
 	void* ImguiContext;
 	void* ImguiMalloc;
 	void* ImguiFree;
 
-	struct {
-		GUI_ADDRENDER Register;
-		GUI_REMRENDER Deregister;
-	} Renderer;
-
-	/* Logging */
-	LOGGER_LOG Log;
-
-	/* Alerts */
-	ALERTS_NOTIFY GUI_SendAlert;
-
-	/* Paths */
-	struct {
-		PATHS_GETGAMEDIR  GetGameDirectory;
-		PATHS_GETADDONDIR GetAddonDirectory;
-		PATHS_GETCOMMONDIR GetCommonDirectory;
-	} Paths;
-
-	/* Events */
-	struct {
-		EVENTS_RAISE             Raise;
-		EVENTS_RAISENOTIFICATION RaiseNotification;
-		EVENTS_SUBSCRIBE         Subscribe;
-		EVENTS_SUBSCRIBE         Unsubscribe;
-	} Events;
-
-	/* DataLink */
-	struct {
-		DATALINK_GET   Get;
-		DATALINK_SHARE Share;
-	} DataLink;
+	GUI_ADDRENDER                     GUI_Register;
+	GUI_REMRENDER                     GUI_Deregister;
+	UPDATER_REQUESTUPDATE             RequestUpdate;
+	LOGGER_LOG                        Log;
+	ALERTS_NOTIFY                     GUI_SendAlert;
+	GUI_REGISTERCLOSEONESCAPE         GUI_RegisterCloseOnEscape;
+	GUI_DEREGISTERCLOSEONESCAPE       GUI_DeregisterCloseOnEscape;
+	PATHS_GETGAMEDIR                  Paths_GetGameDirectory;
+	PATHS_GETADDONDIR                 Paths_GetAddonDirectory;
+	PATHS_GETCOMMONDIR                Paths_GetCommonDirectory;
+	MINHOOK_CREATE                    MinHook_Create;
+	MINHOOK_REMOVE                    MinHook_Remove;
+	MINHOOK_ENABLE                    MinHook_Enable;
+	MINHOOK_DISABLE                   MinHook_Disable;
+	EVENTS_RAISE                      Events_Raise;
+	EVENTS_RAISENOTIFICATION          Events_RaiseNotification;
+	EVENTS_RAISE_TARGETED             Events_RaiseTargeted;
+	EVENTS_RAISENOTIFICATION_TARGETED Events_RaiseNotificationTargeted;
+	EVENTS_SUBSCRIBE                  Events_Subscribe;
+	EVENTS_SUBSCRIBE                  Events_Unsubscribe;
+	// Additional fields omitted - we only need the above
 } AddonAPI;
 
 #endif
