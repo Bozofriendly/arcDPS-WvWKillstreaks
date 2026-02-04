@@ -12,7 +12,7 @@ A Guild Wars 2 addon that tracks your personal killstreak in World vs. World (Wv
 - Writes kill count to a configurable file in real-time
 - Automatically resets count to 0 when you die
 - Resets count when entering WvW
-- **Nexus version**: Settings UI for configurable output path
+- **Nexus version**: Configurable output path via settings file
 - **Nexus version**: Milestone alerts at 5, 10, 25, 50, and 100 kills
 
 ## Installation
@@ -20,10 +20,11 @@ A Guild Wars 2 addon that tracks your personal killstreak in World vs. World (Wv
 ### Nexus Addon (Recommended)
 
 1. Install [Nexus](https://raidcore.gg/Nexus) if you haven't already
-2. Download `wvw_killstreak.dll` from the [Releases](../../releases) page
-3. Place the DLL in your `<GW2 Install>/addons/` folder
-4. Launch Guild Wars 2 with Nexus
-5. Configure the output path in Nexus settings (Options > Addons > WvW Killstreak)
+2. Install [ArcDPS Integration](https://raidcore.gg/Addons?search=arcdps+integration) from Nexus addon library
+3. Download `wvw_killstreak.dll` from the [Releases](../../releases) page
+4. Place the DLL in your `<GW2 Install>/addons/` folder
+5. Launch Guild Wars 2 with Nexus
+6. (Optional) Edit `<GW2>/addons/killstreak/settings.txt` to change output path
 
 **Default output path:** `<GW2 Install>/addons/killstreak/killstreak.txt`
 

@@ -18,20 +18,8 @@
 #include "Nexus.h"
 #include "ArcDPS.h"
 
-// ImGui forward declarations - Nexus provides the actual implementation
-struct ImGuiContext;
-namespace ImGui {
-    bool Begin(const char* name, bool* p_open = nullptr, int flags = 0);
-    void End();
-    void Text(const char* fmt, ...);
-    void TextWrapped(const char* fmt, ...);
-    bool InputText(const char* label, char* buf, size_t buf_size, int flags = 0);
-    bool Button(const char* label);
-    void Separator();
-    void SameLine(float offset_x = 0.0f, float spacing = -1.0f);
-    void SetCurrentContext(ImGuiContext* ctx);
-    void SetAllocatorFunctions(void* (*alloc_func)(size_t sz, void* user_data), void (*free_func)(void* ptr, void* user_data));
-}
+// Note: ImGui UI disabled - configure via settings file at:
+// <GW2>/addons/killstreak/settings.txt
 
 // Plugin info
 #define ADDON_NAME "WvW Killstreak"
@@ -56,13 +44,11 @@ static AddonDefinition g_addonDef = {};
 // Settings
 static char g_outputPath[512] = "addons/killstreak/killstreak.txt";
 static char g_settingsPath[512] = "";
-static bool g_settingsWindowOpen = false;
 
 // Forward declarations
 static void AddonLoad(AddonAPI* aAPI);
 static void AddonUnload();
 static void OnCombatEvent(void* eventArgs);
-static void RenderOptions();
 static void WriteKillcountToFile();
 static void DebugLog(const char* fmt, ...);
 static void LoadSettings();
@@ -357,44 +343,10 @@ static void OnCombatEvent(void* eventArgs)
     }
 }
 
-///----------------------------------------------------------------------------------------------------
-/// RenderOptions - Render settings UI in Nexus options
-///----------------------------------------------------------------------------------------------------
-static void RenderOptions()
-{
-    ImGui::Text("WvW Killstreak Tracker");
-    ImGui::Separator();
-
-    ImGui::Text("Current Killstreak: %u", g_killCount.load());
-    ImGui::Text("In WvW: %s", g_inWvW.load() ? "Yes" : "No");
-
-    ImGui::Separator();
-
-    ImGui::Text("Output File Path (relative to GW2 directory):");
-    if (ImGui::InputText("##OutputPath", g_outputPath, sizeof(g_outputPath), 0))
-    {
-        // Path changed
-    }
-
-    ImGui::SameLine();
-    if (ImGui::Button("Save"))
-    {
-        SaveSettings();
-        WriteKillcountToFile();  // Write to new location
-        if (g_api) g_api->GUI_SendAlert("Settings saved!");
-    }
-
-    ImGui::TextWrapped("Default: addons/killstreak/killstreak.txt");
-    ImGui::TextWrapped("Full path: %s", GetFullOutputPath().c_str());
-
-    ImGui::Separator();
-
-    if (ImGui::Button("Reset Killstreak"))
-    {
-        g_killCount.store(0);
-        WriteKillcountToFile();
-    }
-}
+// Note: Settings UI removed - configure output path via:
+// <GW2>/addons/killstreak/settings.txt
+// File should contain a single line with the relative path, e.g.:
+// addons/killstreak/killstreak.txt
 
 ///----------------------------------------------------------------------------------------------------
 /// AddonLoad - Called when addon is loaded
@@ -403,21 +355,11 @@ static void AddonLoad(AddonAPI* aAPI)
 {
     g_api = aAPI;
 
-    // Set up ImGui context
-    ImGui::SetCurrentContext(static_cast<ImGuiContext*>(aAPI->ImguiContext));
-    ImGui::SetAllocatorFunctions(
-        reinterpret_cast<void*(*)(size_t, void*)>(aAPI->ImguiMalloc),
-        reinterpret_cast<void(*)(void*, void*)>(aAPI->ImguiFree)
-    );
-
     // Load settings
     LoadSettings();
 
     // Subscribe to ArcDPS combat events
     aAPI->Events.Subscribe(EV_ARCDPS_COMBATEVENT_LOCAL_RAW, OnCombatEvent);
-
-    // Register options render callback
-    aAPI->Renderer.Register(ERenderType_OptionsRender, RenderOptions);
 
     // Initialize kill count file
     g_killCount.store(0);
@@ -436,9 +378,6 @@ static void AddonUnload()
     {
         // Unsubscribe from events
         g_api->Events.Unsubscribe(EV_ARCDPS_COMBATEVENT_LOCAL_RAW, OnCombatEvent);
-
-        // Deregister render callback
-        g_api->Renderer.Deregister(RenderOptions);
 
         char msg[64];
         snprintf(msg, sizeof(msg), "Addon unloaded. Final killstreak: %u", g_killCount.load());
