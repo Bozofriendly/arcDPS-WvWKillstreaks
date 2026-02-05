@@ -83,8 +83,8 @@ extern "C" __declspec(dllexport) AddonDefinition* GetAddonDef()
     g_addonDef.Name = ADDON_NAME;
     g_addonDef.Version.Major = 2;
     g_addonDef.Version.Minor = 0;
-    g_addonDef.Version.Build = 0;
-    g_addonDef.Version.Revision = 1;
+    g_addonDef.Version.Build = 1;
+    g_addonDef.Version.Revision = 0;
     g_addonDef.Author = "Bozo";
     g_addonDef.Description = "Tracks WvW killstreaks and writes to file for OBS integration.";
     g_addonDef.Load = AddonLoad;
@@ -315,40 +315,68 @@ static void OnCombatEvent(void* eventArgs)
         return;
     }
 
-    // Log all combat events with damage to help debug
-    if (!ev->IsStatechange && !ev->IsActivation && !ev->IsBuffRemove && ev->Value != 0)
+    // Log ALL non-statechange events for debugging (Result >= 8 are special events)
+    // KILLINGBLOW = 8, DOWNED = 9 - these have Value == 0 per ArcDPS docs
+    if (!ev->IsStatechange)
     {
-        DebugLog("COMBAT: result=%u, src=%s (self=%d, id=%llu), dst=%s, value=%d, iff=%d",
-            ev->Result,
-            src && src->Name ? src->Name : "null",
-            src ? src->IsSelf : 0,
-            src ? (unsigned long long)src->ID : 0,
-            dst && dst->Name ? dst->Name : "null",
-            ev->Value,
-            ev->IFF);
+        // Log events with high result values (8+) or damage events from self
+        if (ev->Result >= 8 || (src && src->IsSelf && ev->Value != 0))
+        {
+            DebugLog("EVENT: result=%u, buff=%u, activ=%u, buffrem=%u, src=%s (self=%d, id=%llu), dst=%s (self=%d), value=%d, iff=%d, skill=%u",
+                ev->Result,
+                ev->Buff,
+                ev->IsActivation,
+                ev->IsBuffRemove,
+                src && src->Name ? src->Name : "null",
+                src ? src->IsSelf : 0,
+                src ? (unsigned long long)src->ID : 0,
+                dst && dst->Name ? dst->Name : "null",
+                dst ? dst->IsSelf : 0,
+                ev->Value,
+                ev->IFF,
+                ev->SkillID);
+        }
     }
 
-    // Check for killing blow or downed - log all for debugging
-    // KILLINGBLOW = 8, DOWNED = 9 in ArcDPS API
+    // Check for killing blow or downed
+    // KILLINGBLOW = 8: target was killed by skill
+    // DOWNED = 9: target was downed by skill
     if (ev->Result == ArcDPS::CBTR_KILLINGBLOW || ev->Result == ArcDPS::CBTR_DOWNED)
     {
-        DebugLog("KILLINGBLOW DETECTED: result=%u, src=%s (self=%d, id=%llu), dst=%s, iff=%d, inWvW=%d, selfId=%llu",
+        DebugLog("*** KILL/DOWN EVENT ***: result=%u (%s), src=%s (self=%d, id=%llu, team=%u), dst=%s (team=%u), iff=%d, selfId=%llu",
             ev->Result,
+            ev->Result == ArcDPS::CBTR_KILLINGBLOW ? "KILLINGBLOW" : "DOWNED",
             src && src->Name ? src->Name : "null",
             src ? src->IsSelf : 0,
             src ? (unsigned long long)src->ID : 0,
+            src ? src->Team : 0,
             dst && dst->Name ? dst->Name : "null",
+            dst ? dst->Team : 0,
             ev->IFF,
-            g_inWvW.load(),
             (unsigned long long)g_selfId);
 
-        // Check if WE dealt the killing blow (check both IsSelf flag and ID match)
-        bool isSelfKill = (src && src->IsSelf) || (src && g_selfId != 0 && src->ID == g_selfId);
+        // Check if WE dealt the killing blow
+        // Method 1: IsSelf flag is set
+        // Method 2: ID matches our stored self ID
+        bool isSelfKill = false;
+        if (src)
+        {
+            if (src->IsSelf)
+            {
+                isSelfKill = true;
+                DebugLog("Kill attribution: IsSelf flag is set");
+            }
+            else if (g_selfId != 0 && src->ID == g_selfId)
+            {
+                isSelfKill = true;
+                DebugLog("Kill attribution: ID matches selfId");
+            }
+        }
 
         if (isSelfKill)
         {
             uint32_t newCount = g_killCount.fetch_add(1) + 1;
-            DebugLog("KILL COUNTED! New killstreak: %u", newCount);
+            DebugLog("*** KILL COUNTED! *** New killstreak: %u", newCount);
             WriteKillcountToFile();
 
             // Send alert for milestones
@@ -361,7 +389,10 @@ static void OnCombatEvent(void* eventArgs)
         }
         else
         {
-            DebugLog("KILLINGBLOW not counted - src is not self");
+            DebugLog("Kill not counted - src (id=%llu) is not self (selfId=%llu, IsSelf=%d)",
+                src ? (unsigned long long)src->ID : 0,
+                (unsigned long long)g_selfId,
+                src ? src->IsSelf : 0);
         }
     }
 }

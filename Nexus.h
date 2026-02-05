@@ -1,7 +1,9 @@
 ///----------------------------------------------------------------------------------------------------
 /// Copyright (c) Raidcore.GG - Licensed under the MIT license.
+///
 /// Name         :  Nexus.h
 /// Description  :  C/C++ Definitions header for Nexus API.
+/// Authors      :  K. Bieniek
 ///----------------------------------------------------------------------------------------------------
 
 #ifndef NEXUS_H
@@ -23,11 +25,29 @@
 
 typedef enum ERenderType
 {
-	ERenderType_PreRender,
-	ERenderType_Render,
-	ERenderType_PostRender,
-	ERenderType_OptionsRender
+	RT_PreRender,
+	RT_Render,
+	RT_PostRender,
+	RT_OptionsRender
 } ERenderType;
+
+typedef enum EMHStatus
+{
+	MH_UNKNOWN = -1,
+	MH_OK = 0,
+	MH_ERROR_ALREADY_INITIALIZED,
+	MH_ERROR_NOT_INITIALIZED,
+	MH_ERROR_ALREADY_CREATED,
+	MH_ERROR_NOT_CREATED,
+	MH_ERROR_ENABLED,
+	MH_ERROR_DISABLED,
+	MH_ERROR_NOT_EXECUTABLE,
+	MH_ERROR_UNSUPPORTED_FUNCTION,
+	MH_ERROR_MEMORY_ALLOC,
+	MH_ERROR_MEMORY_PROTECT,
+	MH_ERROR_MODULE_NOT_FOUND,
+	MH_ERROR_FUNCTION_NOT_FOUND
+} EMHStatus;
 
 typedef enum ELogLevel
 {
@@ -53,24 +73,6 @@ typedef enum EUpdateProvider
 	EUpdateProvider_Direct   = 3,
 	EUpdateProvider_Self     = 4
 } EUpdateProvider;
-
-typedef enum EMHStatus
-{
-	MH_UNKNOWN = -1,
-	MH_OK = 0,
-	MH_ERROR_ALREADY_INITIALIZED,
-	MH_ERROR_NOT_INITIALIZED,
-	MH_ERROR_ALREADY_CREATED,
-	MH_ERROR_NOT_CREATED,
-	MH_ERROR_ENABLED,
-	MH_ERROR_DISABLED,
-	MH_ERROR_NOT_EXECUTABLE,
-	MH_ERROR_UNSUPPORTED_FUNCTION,
-	MH_ERROR_MEMORY_ALLOC,
-	MH_ERROR_MEMORY_PROTECT,
-	MH_ERROR_MODULE_NOT_FOUND,
-	MH_ERROR_FUNCTION_NOT_FOUND
-} EMHStatus;
 
 typedef struct AddonVersion
 {
@@ -105,8 +107,6 @@ typedef void        (*EVENTS_RAISENOTIFICATION)(const char* aIdentifier);
 typedef void        (*EVENTS_RAISE_TARGETED)(uint32_t aSignature, const char* aIdentifier, void* aEventData);
 typedef void        (*EVENTS_RAISENOTIFICATION_TARGETED)(uint32_t aSignature, const char* aIdentifier);
 typedef void        (*EVENTS_SUBSCRIBE)(const char* aIdentifier, EVENT_CONSUME aConsumeEventCallback);
-typedef void*       (*DATALINK_GET)(const char* aIdentifier);
-typedef void*       (*DATALINK_SHARE)(const char* aIdentifier, uint64_t aResourceSize);
 
 typedef struct AddonDefinition
 {
@@ -150,7 +150,7 @@ typedef struct AddonAPI
 	EVENTS_RAISENOTIFICATION_TARGETED Events_RaiseNotificationTargeted;
 	EVENTS_SUBSCRIBE                  Events_Subscribe;
 	EVENTS_SUBSCRIBE                  Events_Unsubscribe;
-	// Additional fields omitted - we only need the above
+	// Additional fields not needed for this addon
 } AddonAPI;
 
 #endif
