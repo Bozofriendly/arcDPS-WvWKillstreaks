@@ -28,15 +28,6 @@ A Guild Wars 2 addon that tracks your personal killstreak in World vs. World (Wv
 
 **Default output path:** `<GW2 Install>/addons/streamlink/killstreak.txt`
 
-### ArcDPS Plugin (Legacy)
-
-1. Install [ArcDPS](https://www.deltaconnected.com/arcdps/) if you haven't already
-2. Download `arcdps_killstreak.dll` from the [Releases](../../releases) page
-3. Copy the DLL to your Guild Wars 2 `bin64` folder (same location as `d3d11.dll`)
-4. Launch Guild Wars 2
-
-**Output path:** `<GW2 Install>/addons/arcdps/killstreak.txt`
-
 ## OBS Setup
 
 1. Add a "Text (GDI+)" source
@@ -45,43 +36,6 @@ A Guild Wars 2 addon that tracks your personal killstreak in World vs. World (Wv
    - Nexus: `<GW2 Install>/addons/streamlink/killstreak.txt` (or your custom path)
    - ArcDPS: `<GW2 Install>/addons/arcdps/killstreak.txt`
 4. Style as desired
-
-## Building
-
-### Requirements
-
-- Windows 10/11
-- Visual Studio 2022 (or 2019) with C++ Desktop Development workload
-- CMake 3.15+
-
-### Build Steps
-
-**Build Nexus version (default):**
-```batch
-mkdir build && cd build
-cmake -G "Visual Studio 17 2022" -A x64 -DBUILD_TYPE=NEXUS ..
-cmake --build . --config Release
-```
-
-**Build ArcDPS version:**
-```batch
-mkdir build && cd build
-cmake -G "Visual Studio 17 2022" -A x64 -DBUILD_TYPE=ARCDPS ..
-cmake --build . --config Release
-```
-
-**Using the batch file (ArcDPS version):**
-```batch
-build.bat
-```
-
-### Cross-compiling from Linux (MinGW)
-
-```bash
-mkdir build && cd build
-cmake -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake -DBUILD_TYPE=NEXUS ..
-make
-```
 
 ## How It Works
 
