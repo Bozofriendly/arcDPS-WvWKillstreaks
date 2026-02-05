@@ -483,14 +483,18 @@ static void OnCombatEvent(void* eventArgs)
         return;
     }
 
-    // Log ALL non-statechange events for debugging (Result >= 8 are special events)
-    // KILLINGBLOW = 8, DOWNED = 9 - these have Value == 0 per ArcDPS docs
+    // Log ALL events when player is downed (to capture stomp sequence)
+    // Also log events with high result values (8+), damage from self, OR damage TO self
     if (!ev->IsStatechange)
     {
-        // Log events with high result values (8+), damage from self, OR damage TO self
-        if (ev->Result >= 8 || (src && src->IsSelf && ev->Value != 0) || (dst && dst->IsSelf))
+        bool shouldLog = ev->Result >= 8 ||
+                         (src && src->IsSelf && ev->Value != 0) ||
+                         (dst && dst->IsSelf) ||
+                         g_isPlayerDowned.load();  // Log everything while downed
+
+        if (shouldLog)
         {
-            DebugLog("EVENT: result=%u, buff=%u, activ=%u, buffrem=%u, src=%s (self=%d, id=%llu), dst=%s (self=%d), value=%d, iff=%d, skill=%u",
+            DebugLog("EVENT: result=%u, buff=%u, activ=%u, buffrem=%u, src=%s (self=%d, id=%llu), dst=%s (self=%d, id=%llu), value=%d, iff=%d, skill=%u",
                 ev->Result,
                 ev->Buff,
                 ev->IsActivation,
@@ -500,9 +504,18 @@ static void OnCombatEvent(void* eventArgs)
                 src ? (unsigned long long)src->ID : 0,
                 dst && dst->Name ? dst->Name : "null",
                 dst ? dst->IsSelf : 0,
+                dst ? (unsigned long long)dst->ID : 0,
                 ev->Value,
                 ev->IFF,
                 ev->SkillID);
+        }
+
+        // Track downed state using DOWNED result (result=9)
+        if (ev->Result == ArcDPS::CBTR_DOWNED && dst &&
+            (dst->IsSelf || (g_selfId != 0 && dst->ID == g_selfId)))
+        {
+            DebugLog("*** PLAYER DOWNED (via result=9) *** - tracking downed state");
+            g_isPlayerDowned.store(true);
         }
     }
 
