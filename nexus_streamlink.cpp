@@ -537,9 +537,8 @@ static void AddonLoad(AddonAPI* aAPI)
     // Load settings
     LoadSettings();
 
-    // Subscribe to ArcDPS combat events (both local and squad for full coverage)
+    // Subscribe to ArcDPS combat events (LOCAL only - SQUAD_RAW has IsSelf=0 which breaks kill detection)
     aAPI->Events_Subscribe(EV_ARCDPS_COMBATEVENT_LOCAL_RAW, OnCombatEvent);
-    aAPI->Events_Subscribe(EV_ARCDPS_COMBATEVENT_SQUAD_RAW, OnCombatEvent);
 
     // Subscribe to Unofficial Extras squad events (requires ArcdpsIntegration addon)
     aAPI->Events_Subscribe(EV_UNOFFICIAL_EXTRAS_SQUAD_UPDATE, OnSquadUpdate);
@@ -564,7 +563,6 @@ static void AddonUnload()
     {
         // Unsubscribe from events
         g_api->Events_Unsubscribe(EV_ARCDPS_COMBATEVENT_LOCAL_RAW, OnCombatEvent);
-        g_api->Events_Unsubscribe(EV_ARCDPS_COMBATEVENT_SQUAD_RAW, OnCombatEvent);
         g_api->Events_Unsubscribe(EV_UNOFFICIAL_EXTRAS_SQUAD_UPDATE, OnSquadUpdate);
 
         char msg[64];
