@@ -92,7 +92,7 @@ extern "C" __declspec(dllexport) AddonDefinition* GetAddonDef()
     g_addonDef.Name = ADDON_NAME;
     g_addonDef.Version.Major = 2;
     g_addonDef.Version.Minor = 3;
-    g_addonDef.Version.Build = 0;
+    g_addonDef.Version.Build = 1;
     g_addonDef.Version.Revision = 0;
     g_addonDef.Author = "Bozo";
     g_addonDef.Description = "Tracks WvW killstreaks and writes to file for OBS integration.";
@@ -348,6 +348,12 @@ static void OnCombatEvent(void* eventArgs)
     // Handle state changes
     if (ev->IsStatechange)
     {
+        // Log ALL state changes for debugging
+        DebugLog("STATECHANGE: type=%u, src=%s (self=%d)",
+            ev->IsStatechange,
+            src && src->Name ? src->Name : "null",
+            src ? src->IsSelf : 0);
+
         switch (ev->IsStatechange)
         {
             case ArcDPS::CBTS_ENTERCOMBAT:
