@@ -35,6 +35,7 @@
 static std::atomic<uint32_t> g_killCount{0};
 static std::atomic<bool> g_inWvW{false};
 static std::atomic<bool> g_inSquad{false};
+static std::atomic<bool> g_isPlayerDowned{false};
 static std::mutex g_fileMutex;
 static std::mutex g_debugMutex;
 static std::mutex g_squadMutex;
@@ -375,12 +376,78 @@ static void OnCombatEvent(void* eventArgs)
                     src ? src->Profession : 0,
                     src ? src->Team : 0);
 
-                // Check if WE died
-                if (src && src->IsSelf)
+                // Check if WE died (direct death or bleedout - fires CHANGEDEAD)
+                if (src && (src->IsSelf || (g_selfId != 0 && src->ID == g_selfId)))
                 {
-                    DebugLog("Player died - resetting killstreak from %u", g_killCount.load());
+                    DebugLog("Player died (CHANGEDEAD) - resetting killstreak from %u", g_killCount.load());
                     g_killCount.store(0);
                     WriteKillcountToFile();
+                    g_isPlayerDowned.store(false);  // Clear downed state
+                }
+                break;
+
+            case ArcDPS::CBTS_CHANGEDOWN:
+                DebugLog("CHANGEDOWN: src=%s (self=%d, id=%llu), dst=%s (self=%d, id=%llu)",
+                    src && src->Name ? src->Name : "null",
+                    src ? src->IsSelf : 0,
+                    src ? (unsigned long long)src->ID : 0,
+                    dst && dst->Name ? dst->Name : "null",
+                    dst ? dst->IsSelf : 0,
+                    dst ? (unsigned long long)dst->ID : 0);
+
+                // Track when WE get downed
+                if (src && (src->IsSelf || (g_selfId != 0 && src->ID == g_selfId)))
+                {
+                    DebugLog("*** PLAYER DOWNED *** - tracking downed state");
+                    g_isPlayerDowned.store(true);
+                }
+                break;
+
+            case ArcDPS::CBTS_CHANGEUP:
+                DebugLog("CHANGEUP: src=%s (self=%d, id=%llu), dst=%s (self=%d, id=%llu)",
+                    src && src->Name ? src->Name : "null",
+                    src ? src->IsSelf : 0,
+                    src ? (unsigned long long)src->ID : 0,
+                    dst && dst->Name ? dst->Name : "null",
+                    dst ? dst->IsSelf : 0,
+                    dst ? (unsigned long long)dst->ID : 0);
+
+                // Track when WE rally (get up from downed without dying)
+                if (src && (src->IsSelf || (g_selfId != 0 && src->ID == g_selfId)))
+                {
+                    DebugLog("*** PLAYER RALLIED *** - clearing downed state (NOT resetting killstreak)");
+                    g_isPlayerDowned.store(false);
+                }
+                break;
+
+            case ArcDPS::CBTS_DESPAWN:
+                DebugLog("DESPAWN: src=%s (self=%d, id=%llu)",
+                    src && src->Name ? src->Name : "null",
+                    src ? src->IsSelf : 0,
+                    src ? (unsigned long long)src->ID : 0);
+
+                // If we despawn while downed, it means we died (stomp/bleedout)
+                // This catches stomp deaths that don't fire CHANGEDEAD
+                if (g_isPlayerDowned.load() && src &&
+                    (src->IsSelf || (g_selfId != 0 && src->ID == g_selfId)))
+                {
+                    DebugLog("*** STOMP/BLEEDOUT DEATH DETECTED *** - resetting killstreak from %u", g_killCount.load());
+                    g_killCount.store(0);
+                    WriteKillcountToFile();
+                    g_isPlayerDowned.store(false);
+                }
+                break;
+
+            case ArcDPS::CBTS_SPAWN:
+                DebugLog("SPAWN: src=%s (self=%d, id=%llu)",
+                    src && src->Name ? src->Name : "null",
+                    src ? src->IsSelf : 0,
+                    src ? (unsigned long long)src->ID : 0);
+
+                // Clear downed state on spawn (respawn after death)
+                if (src && (src->IsSelf || (g_selfId != 0 && src->ID == g_selfId)))
+                {
+                    g_isPlayerDowned.store(false);
                 }
                 break;
 
@@ -407,6 +474,9 @@ static void OnCombatEvent(void* eventArgs)
                         g_killCount.store(0);
                         WriteKillcountToFile();
                     }
+
+                    // Reset downed state on map change
+                    g_isPlayerDowned.store(false);
                 }
                 break;
         }
