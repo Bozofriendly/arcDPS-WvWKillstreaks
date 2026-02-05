@@ -83,7 +83,7 @@ extern "C" __declspec(dllexport) AddonDefinition* GetAddonDef()
     g_addonDef.Name = ADDON_NAME;
     g_addonDef.Version.Major = 2;
     g_addonDef.Version.Minor = 0;
-    g_addonDef.Version.Build = 2;
+    g_addonDef.Version.Build = 3;
     g_addonDef.Version.Revision = 0;
     g_addonDef.Author = "Bozo";
     g_addonDef.Description = "Tracks WvW killstreaks and writes to file for OBS integration.";
@@ -393,6 +393,14 @@ static void OnCombatEvent(void* eventArgs)
                 src ? (unsigned long long)src->ID : 0,
                 (unsigned long long)g_selfId,
                 src ? src->IsSelf : 0);
+        }
+
+        // Check if WE were killed (we are the target)
+        if (dst && dst->IsSelf)
+        {
+            DebugLog("*** PLAYER DIED! *** Resetting killstreak from %u", g_killCount.load());
+            g_killCount.store(0);
+            WriteKillcountToFile();
         }
     }
 }
