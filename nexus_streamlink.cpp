@@ -315,13 +315,6 @@ static void OnCombatEvent(void* eventArgs)
                                    (mapId == 1206) ||                   // Alpine Borderlands
                                    (mapId == 1323);                     // Desert Borderlands variant
 
-                    if (g_api)
-                    {
-                        char logMsg[128];
-                        snprintf(logMsg, sizeof(logMsg), "MAPID event: mapId=%u, isWvW=%s", mapId, isWvWMap ? "true" : "false");
-                        g_api->Log(ELogLevel_INFO, ADDON_NAME, logMsg);
-                    }
-
                     bool wasInWvW = g_inWvW.load();
                     g_inWvW.store(isWvWMap);
 
@@ -342,15 +335,6 @@ static void OnCombatEvent(void* eventArgs)
     }
 
     // Check for killing blow (WvW only)
-    if (ev->Result == ArcDPS::CBTR_KILLINGBLOW)
-    {
-        if (g_api)
-        {
-            char logMsg[128];
-            snprintf(logMsg, sizeof(logMsg), "KILLINGBLOW detected, g_inWvW=%s", g_inWvW.load() ? "true" : "false");
-            g_api->Log(ELogLevel_INFO, ADDON_NAME, logMsg);
-        }
-    }
     if (ev->Result == ArcDPS::CBTR_KILLINGBLOW && g_inWvW.load())
     {
         // Check if WE dealt the killing blow
