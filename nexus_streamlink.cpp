@@ -365,6 +365,17 @@ static void OnCombatEvent(void* eventArgs)
     }
 
     // Check for killing blow (WvW only via MumbleLink)
+    if (ev->Result == ArcDPS::CBTR_KILLINGBLOW)
+    {
+        if (g_api && g_mumbleLink)
+        {
+            const MumbleContext* ctx = reinterpret_cast<const MumbleContext*>(g_mumbleLink->context);
+            char logMsg[128];
+            snprintf(logMsg, sizeof(logMsg), "KILLINGBLOW: mapType=%u, mapId=%u, isWvW=%s",
+                     ctx->mapType, ctx->mapId, IsInWvW() ? "true" : "false");
+            g_api->Log(ELogLevel_DEBUG, ADDON_NAME, logMsg);
+        }
+    }
     if (ev->Result == ArcDPS::CBTR_KILLINGBLOW && IsInWvW())
     {
         // Check if WE dealt the killing blow
