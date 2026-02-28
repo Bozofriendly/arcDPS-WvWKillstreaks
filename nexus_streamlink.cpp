@@ -426,7 +426,11 @@ static void AddonLoad(AddonAPI* aAPI)
         g_mumbleLink = static_cast<LinkedMem*>(MapViewOfFile(g_mumbleHandle, FILE_MAP_READ, 0, 0, sizeof(LinkedMem)));
         if (g_mumbleLink)
         {
-            aAPI->Log(ELogLevel_INFO, ADDON_NAME, "MumbleLink connected.");
+            const MumbleContext* ctx = reinterpret_cast<const MumbleContext*>(g_mumbleLink->context);
+            char logMsg[128];
+            snprintf(logMsg, sizeof(logMsg), "MumbleLink connected. mapType=%u, mapId=%u, isWvW=%s",
+                     ctx->mapType, ctx->mapId, IsInWvW() ? "true" : "false");
+            aAPI->Log(ELogLevel_INFO, ADDON_NAME, logMsg);
         }
         else
         {
