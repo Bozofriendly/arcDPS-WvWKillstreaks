@@ -27,9 +27,13 @@ Open the Nexus options window (default keybind `Ctrl+O`) and go to **Options →
 - Reset the killstreak counter
 - Change the output file paths (saved automatically when a field loses focus)
 
+Output paths are full paths (e.g. `C:\stream\killstreak.txt`), so files can be written
+anywhere — not just inside the GW2 install directory.
+
 Settings are stored in `<GW2>/addons/streamlink/settings.txt` as `key=value` lines
 (`killstreak_path`, `squad_path`, `playerstatus_path`). The old single-line format
-(just the killstreak path) is still read for backwards compatibility.
+(just the killstreak path) is still read, and relative paths from old settings are
+resolved against the GW2 install directory for backwards compatibility.
 
 ## Output Files
 

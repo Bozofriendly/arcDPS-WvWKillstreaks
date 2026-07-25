@@ -90,9 +90,7 @@ static void WriteSquadStatusToFile();
 static void WritePlayerStatusToFile();
 static void LoadSettings();
 static void SaveSettings();
-static std::string GetFullOutputPath();
-static std::string GetSquadOutputPath();
-static std::string GetPlayerStatusOutputPath();
+static std::string ResolvePath(const char* aPath);
 
 ///----------------------------------------------------------------------------------------------------
 /// IsInWvW - Check if player is in WvW via MumbleLink shared memory
@@ -166,59 +164,32 @@ extern "C" __declspec(dllexport) AddonDefinition* GetAddonDef()
 }
 
 ///----------------------------------------------------------------------------------------------------
-/// GetFullOutputPath - Returns the full path to the output file
+/// IsAbsolutePath - True for drive-letter (C:\...), UNC (\\server\...) and root-relative paths
 ///----------------------------------------------------------------------------------------------------
-static std::string GetFullOutputPath()
+static bool IsAbsolutePath(const char* aPath)
 {
-    if (!g_api) return g_outputPath;
-
-    const char* gameDir = g_api->Paths_GetGameDirectory();
-    if (!gameDir) return g_outputPath;
-
-    std::string fullPath = gameDir;
-    if (!fullPath.empty() && fullPath.back() != '\\' && fullPath.back() != '/')
-    {
-        fullPath += "\\";
-    }
-    fullPath += g_outputPath;
-    return fullPath;
+    if (!aPath || !aPath[0]) return false;
+    if (aPath[0] == '\\' || aPath[0] == '/') return true;
+    bool isLetter = (aPath[0] >= 'A' && aPath[0] <= 'Z') || (aPath[0] >= 'a' && aPath[0] <= 'z');
+    return isLetter && aPath[1] == ':';
 }
 
 ///----------------------------------------------------------------------------------------------------
-/// GetSquadOutputPath - Returns the full path to the squad status file
+/// ResolvePath - Returns aPath as-is if absolute, otherwise resolves against the game directory
 ///----------------------------------------------------------------------------------------------------
-static std::string GetSquadOutputPath()
+static std::string ResolvePath(const char* aPath)
 {
-    if (!g_api) return g_squadOutputPath;
+    if (IsAbsolutePath(aPath) || !g_api) return aPath;
 
     const char* gameDir = g_api->Paths_GetGameDirectory();
-    if (!gameDir) return g_squadOutputPath;
+    if (!gameDir) return aPath;
 
     std::string fullPath = gameDir;
     if (!fullPath.empty() && fullPath.back() != '\\' && fullPath.back() != '/')
     {
         fullPath += "\\";
     }
-    fullPath += g_squadOutputPath;
-    return fullPath;
-}
-
-///----------------------------------------------------------------------------------------------------
-/// GetPlayerStatusOutputPath - Returns the full path to the player status file
-///----------------------------------------------------------------------------------------------------
-static std::string GetPlayerStatusOutputPath()
-{
-    if (!g_api) return g_playerStatusPath;
-
-    const char* gameDir = g_api->Paths_GetGameDirectory();
-    if (!gameDir) return g_playerStatusPath;
-
-    std::string fullPath = gameDir;
-    if (!fullPath.empty() && fullPath.back() != '\\' && fullPath.back() != '/')
-    {
-        fullPath += "\\";
-    }
-    fullPath += g_playerStatusPath;
+    fullPath += aPath;
     return fullPath;
 }
 
@@ -314,7 +285,7 @@ static void WriteKillcountToFile()
 {
     std::lock_guard<std::mutex> lock(g_fileMutex);
 
-    std::string fullPath = GetFullOutputPath();
+    std::string fullPath = ResolvePath(g_outputPath);
 
     // Ensure directory exists
     std::string dirPath = fullPath.substr(0, fullPath.find_last_of("\\/"));
@@ -335,7 +306,7 @@ static void WriteSquadStatusToFile()
 {
     std::lock_guard<std::mutex> lock(g_fileMutex);
 
-    std::string fullPath = GetSquadOutputPath();
+    std::string fullPath = ResolvePath(g_squadOutputPath);
 
     // Ensure directory exists
     std::string dirPath = fullPath.substr(0, fullPath.find_last_of("\\/"));
@@ -356,7 +327,7 @@ static void WritePlayerStatusToFile()
 {
     std::lock_guard<std::mutex> lock(g_fileMutex);
 
-    std::string fullPath = GetPlayerStatusOutputPath();
+    std::string fullPath = ResolvePath(g_playerStatusPath);
 
     // Ensure directory exists
     std::string dirPath = fullPath.substr(0, fullPath.find_last_of("\\/"));
@@ -588,7 +559,7 @@ static void AddonOptions()
     ImGui::Spacing();
     ImGui::TextDisabled("Output Files");
     ImGui::Separator();
-    ImGui::TextWrapped("Paths are relative to the Guild Wars 2 install directory. "
+    ImGui::TextWrapped("Full paths to the output files (e.g. C:\\stream\\killstreak.txt). "
                        "Changes are saved when a field loses focus.");
 
     bool pathsEdited = false;
@@ -660,8 +631,11 @@ static void AddonLoad(AddonAPI* aAPI)
         aAPI->Log(ELogLevel_WARNING, ADDON_NAME, "MumbleLink: shared memory not found.");
     }
 
-    // Load settings
+    // Load settings, then expand any relative paths (defaults or legacy settings) to full paths
     LoadSettings();
+    strncpy_s(g_outputPath, ResolvePath(g_outputPath).c_str(), sizeof(g_outputPath) - 1);
+    strncpy_s(g_squadOutputPath, ResolvePath(g_squadOutputPath).c_str(), sizeof(g_squadOutputPath) - 1);
+    strncpy_s(g_playerStatusPath, ResolvePath(g_playerStatusPath).c_str(), sizeof(g_playerStatusPath) - 1);
 
     // Subscribe to ArcDPS combat events
     aAPI->Events_Subscribe(EV_ARCDPS_COMBATEVENT_LOCAL_RAW, OnCombatEvent);
