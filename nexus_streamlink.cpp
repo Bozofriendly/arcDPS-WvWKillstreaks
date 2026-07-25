@@ -16,12 +16,11 @@
 #include <string>
 #include <unordered_set>
 
+#include "imgui/imgui.h"
+
 #include "Nexus.h"
 #include "ArcDPS.h"
 #include "UnofficialExtras.h"
-
-// Note: ImGui UI disabled - configure via settings file at:
-// <GW2>/addons/streamlink/settings.txt
 
 // Plugin info
 #define ADDON_NAME "Nexus Streamlink"
@@ -82,6 +81,7 @@ static char g_settingsPath[512] = "";
 // Forward declarations
 static void AddonLoad(AddonAPI* aAPI);
 static void AddonUnload();
+static void AddonOptions();
 static void OnCombatEvent(void* eventArgs);
 static void OnSquadCombatEvent(void* eventArgs);
 static void OnSquadUpdate(void* eventArgs);
@@ -89,6 +89,7 @@ static void WriteKillcountToFile();
 static void WriteSquadStatusToFile();
 static void WritePlayerStatusToFile();
 static void LoadSettings();
+static void SaveSettings();
 static std::string GetFullOutputPath();
 static std::string GetSquadOutputPath();
 static std::string GetPlayerStatusOutputPath();
@@ -150,7 +151,7 @@ extern "C" __declspec(dllexport) AddonDefinition* GetAddonDef()
     g_addonDef.APIVersion = NEXUS_API_VERSION;
     g_addonDef.Name = ADDON_NAME;
     g_addonDef.Version.Major = 2;
-    g_addonDef.Version.Minor = 5;
+    g_addonDef.Version.Minor = 6;
     g_addonDef.Version.Build = 0;
     g_addonDef.Version.Revision = 0;
     g_addonDef.Author = "Bozo";
@@ -241,7 +242,7 @@ static std::string GetSettingsPath()
 }
 
 ///----------------------------------------------------------------------------------------------------
-/// LoadSettings - Load settings from file
+/// LoadSettings - Load settings from file (key=value lines; a bare path is the legacy format)
 ///----------------------------------------------------------------------------------------------------
 static void LoadSettings()
 {
@@ -249,20 +250,59 @@ static void LoadSettings()
     if (path.empty()) return;
 
     FILE* f = nullptr;
-    if (fopen_s(&f, path.c_str(), "r") == 0 && f)
-    {
-        char buffer[512];
-        if (fgets(buffer, sizeof(buffer), f))
-        {
-            // Remove newline
-            size_t len = strlen(buffer);
-            if (len > 0 && (buffer[len-1] == '\n' || buffer[len-1] == '\r'))
-                buffer[len-1] = '\0';
-            if (len > 1 && (buffer[len-2] == '\n' || buffer[len-2] == '\r'))
-                buffer[len-2] = '\0';
+    if (fopen_s(&f, path.c_str(), "r") != 0 || !f) return;
 
+    char buffer[600];
+    while (fgets(buffer, sizeof(buffer), f))
+    {
+        // Trim trailing newline/carriage return
+        size_t len = strlen(buffer);
+        while (len > 0 && (buffer[len-1] == '\n' || buffer[len-1] == '\r'))
+            buffer[--len] = '\0';
+        if (len == 0) continue;
+
+        char* eq = strchr(buffer, '=');
+        if (!eq)
+        {
+            // Legacy format: the whole line is the killstreak output path
             strncpy_s(g_outputPath, buffer, sizeof(g_outputPath) - 1);
+            continue;
         }
+
+        *eq = '\0';
+        const char* key = buffer;
+        const char* value = eq + 1;
+        if (*value == '\0') continue;
+
+        if (strcmp(key, "killstreak_path") == 0)
+            strncpy_s(g_outputPath, value, sizeof(g_outputPath) - 1);
+        else if (strcmp(key, "squad_path") == 0)
+            strncpy_s(g_squadOutputPath, value, sizeof(g_squadOutputPath) - 1);
+        else if (strcmp(key, "playerstatus_path") == 0)
+            strncpy_s(g_playerStatusPath, value, sizeof(g_playerStatusPath) - 1);
+    }
+    fclose(f);
+}
+
+///----------------------------------------------------------------------------------------------------
+/// SaveSettings - Write settings to file
+///----------------------------------------------------------------------------------------------------
+static void SaveSettings()
+{
+    std::string path = GetSettingsPath();
+    if (path.empty()) return;
+
+    std::lock_guard<std::mutex> lock(g_fileMutex);
+
+    std::string dirPath = path.substr(0, path.find_last_of("\\/"));
+    CreateDirectoryA(dirPath.c_str(), nullptr);
+
+    FILE* f = nullptr;
+    if (fopen_s(&f, path.c_str(), "w") == 0 && f)
+    {
+        fprintf(f, "killstreak_path=%s\n", g_outputPath);
+        fprintf(f, "squad_path=%s\n", g_squadOutputPath);
+        fprintf(f, "playerstatus_path=%s\n", g_playerStatusPath);
         fclose(f);
     }
 }
@@ -532,11 +572,68 @@ static void OnSquadCombatEvent(void* eventArgs)
 }
 
 ///----------------------------------------------------------------------------------------------------
+/// AddonOptions - Render settings UI in the Nexus options window
+///----------------------------------------------------------------------------------------------------
+static void AddonOptions()
+{
+    ImGui::TextDisabled("Status");
+    ImGui::Separator();
+    ImGui::Text("Current killstreak: %u", g_killCount.load());
+    ImGui::Text("In squad: %s", g_inSquad.load() ? "yes" : "no");
+    ImGui::Text("Player status: %s", g_playerStatus);
+    ImGui::Text("In WvW: %s", IsInWvW() ? "yes" : "no");
+
+    bool resetClicked = ImGui::Button("Reset Killstreak");
+
+    ImGui::Spacing();
+    ImGui::TextDisabled("Output Files");
+    ImGui::Separator();
+    ImGui::TextWrapped("Paths are relative to the Guild Wars 2 install directory. "
+                       "Changes are saved when a field loses focus.");
+
+    bool pathsEdited = false;
+    {
+        // Hold the file mutex while editing so writers never see a half-typed path
+        std::lock_guard<std::mutex> lock(g_fileMutex);
+
+        ImGui::InputText("Killstreak file", g_outputPath, sizeof(g_outputPath));
+        pathsEdited |= ImGui::IsItemDeactivatedAfterEdit();
+
+        ImGui::InputText("Squad status file", g_squadOutputPath, sizeof(g_squadOutputPath));
+        pathsEdited |= ImGui::IsItemDeactivatedAfterEdit();
+
+        ImGui::InputText("Player status file", g_playerStatusPath, sizeof(g_playerStatusPath));
+        pathsEdited |= ImGui::IsItemDeactivatedAfterEdit();
+    }
+
+    // Act outside the locked scope: these helpers take g_fileMutex themselves
+    if (resetClicked)
+    {
+        g_killCount.store(0);
+        WriteKillcountToFile();
+    }
+
+    if (pathsEdited)
+    {
+        SaveSettings();
+        WriteKillcountToFile();
+        WriteSquadStatusToFile();
+        WritePlayerStatusToFile();
+    }
+}
+
+///----------------------------------------------------------------------------------------------------
 /// AddonLoad - Called when addon is loaded
 ///----------------------------------------------------------------------------------------------------
 static void AddonLoad(AddonAPI* aAPI)
 {
     g_api = aAPI;
+
+    // Bind to the ImGui context provided by Nexus so our UI renders in its frame
+    ImGui::SetCurrentContext(static_cast<ImGuiContext*>(aAPI->ImguiContext));
+    ImGui::SetAllocatorFunctions(
+        reinterpret_cast<void* (*)(size_t, void*)>(aAPI->ImguiMalloc),
+        reinterpret_cast<void (*)(void*, void*)>(aAPI->ImguiFree));
 
     // Open MumbleLink shared memory for WvW detection
     g_mumbleHandle = OpenFileMappingW(FILE_MAP_READ, FALSE, L"MumbleLink");
@@ -573,6 +670,9 @@ static void AddonLoad(AddonAPI* aAPI)
     // Subscribe to Unofficial Extras squad events (requires ArcdpsIntegration addon)
     aAPI->Events_Subscribe(EV_UNOFFICIAL_EXTRAS_SQUAD_UPDATE, OnSquadUpdate);
 
+    // Register the options panel shown in the Nexus addon settings
+    aAPI->GUI_Register(RT_OptionsRender, AddonOptions);
+
     // Initialize output files
     g_killCount.store(0);
     g_inSquad.store(false);
@@ -591,6 +691,8 @@ static void AddonUnload()
 {
     if (g_api)
     {
+        g_api->GUI_Deregister(AddonOptions);
+
         // Unsubscribe from events
         g_api->Events_Unsubscribe(EV_ARCDPS_COMBATEVENT_LOCAL_RAW, OnCombatEvent);
         g_api->Events_Unsubscribe(EV_ARCDPS_COMBATEVENT_SQUAD_RAW, OnSquadCombatEvent);
@@ -615,6 +717,7 @@ static void AddonUnload()
     WriteKillcountToFile();
     WriteSquadStatusToFile();
     WritePlayerStatusToFile();
+    SaveSettings();
 
     // Clear squad members
     {

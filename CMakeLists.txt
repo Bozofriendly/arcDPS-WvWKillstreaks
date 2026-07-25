@@ -14,7 +14,13 @@ if(WIN32)
         Nexus.h
         ArcDPS.h
         UnofficialExtras.h
+        imgui/imgui.cpp
+        imgui/imgui_draw.cpp
+        imgui/imgui_tables.cpp
+        imgui/imgui_widgets.cpp
     )
+
+    target_include_directories(nexus_streamlink PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
     # Set output name for Nexus addon
     set_target_properties(nexus_streamlink PROPERTIES

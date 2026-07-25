@@ -9,6 +9,7 @@ A Guild Wars 2 Nexus addon that tracks your personal WvW killstreak, squad statu
   - Automatically resets kill count to 0 when you die in WvW
 - Tracks squad membership status
 - Tracks player alive/downed/dead state (works in all game modes)
+- In-game options panel (Nexus → Options → Addons → Nexus Streamlink) to view live status, reset the killstreak, and change output file paths
 
 ## Installation
 
@@ -17,7 +18,18 @@ A Guild Wars 2 Nexus addon that tracks your personal WvW killstreak, squad statu
 3. Download `nexus_streamlink.dll` from the [Releases](../../releases) page
 4. Place the DLL in your `<GW2 Install>/addons/` folder
 5. Launch Guild Wars 2 with Nexus
-6. (Optional) Edit `<GW2>/addons/streamlink/settings.txt` to change the killstreak output path
+
+## Configuration
+
+Open the Nexus options window (default keybind `Ctrl+O`) and go to **Options → Addons → Nexus Streamlink**. There you can:
+
+- See your current killstreak, squad status, player status, and whether you're in WvW
+- Reset the killstreak counter
+- Change the output file paths (saved automatically when a field loses focus)
+
+Settings are stored in `<GW2>/addons/streamlink/settings.txt` as `key=value` lines
+(`killstreak_path`, `squad_path`, `playerstatus_path`). The old single-line format
+(just the killstreak path) is still read for backwards compatibility.
 
 ## Output Files
 
